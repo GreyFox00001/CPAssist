@@ -3,17 +3,17 @@ import { Hero } from "@/components/ui/hero"
 function HeroDemo() {
   return (
     <Hero
-      title="AI that works for you."
-      subtitle="Transform your workflow with intelligent automation. Simple, powerful, reliable."
+      title="CPAssist that works for you."
+      subtitle="Transform your learning with intelligent assistance. Simple, powerful, reliable."
       actions={[
         {
-          label: "Try Demo",
-          href: "#",
+          label: "Login",
+          href: "/login",
           variant: "outline",
         },
         {
-          label: "Start Free",
-          href: "#",
+          label: "Sign Up",
+          href: "/signup",
           variant: "default",
         },
       ]}

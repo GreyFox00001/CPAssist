@@ -84,9 +84,6 @@ const Hero = React.forwardRef<HTMLElement, HeroProps>(
                 duration: 0.8,
                 ease: "easeInOut",
               }}
-              style={{
-                backgroundImage: `conic-gradient(var(--conic-position), var(--tw-gradient-stops))`,
-              }}
               className="absolute inset-auto right-1/2 h-56 overflow-visible w-120 bg-gradient-conic from-primary/60 via-transparent to-transparent [--conic-position:from_70deg_at_center_top]"
             >
               <div className="absolute w-fulleft-0 bg-background h-40 bottom-0 z-20 mask-[linear-gradient(to_top,white,transparent)]" />
@@ -101,9 +98,6 @@ const Hero = React.forwardRef<HTMLElement, HeroProps>(
                 delay: 0.3,
                 duration: 0.8,
                 ease: "easeInOut",
-              }}
-              style={{
-                backgroundImage: `conic-gradient(var(--conic-position), var(--tw-gradient-stops))`,
               }}
               className="absolute inset-auto left-1/2 h-56 w-120 bg-gradient-conic from-transparent via-transparent to-primary/60 [--conic-position:from_290deg_at_center_top]"
             >

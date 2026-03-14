@@ -55,6 +55,15 @@ type DashboardPayload = {
     activeWindow: string;
     lastUpdatedAt: string;
   };
+  streak: {
+    current: number;
+    longest: number;
+    activeDays: number;
+    calendar: Array<{
+      date: string;
+      count: number;
+    }>;
+  };
   ratingHistory: Array<{
     contest: string;
     shortDate: string;
@@ -165,6 +174,76 @@ function buildActivityWindow(submissions: CodeforcesSubmission[]) {
   return `${start} - ${end} UTC`;
 }
 
+function toUtcDateKey(timestampSeconds: number) {
+  return new Date(timestampSeconds * 1000).toISOString().slice(0, 10);
+}
+
+function buildStreakData(submissions: CodeforcesSubmission[]) {
+  const dailyCounts = new Map<string, number>();
+
+  for (const submission of submissions) {
+    const dateKey = toUtcDateKey(submission.creationTimeSeconds);
+    dailyCounts.set(dateKey, (dailyCounts.get(dateKey) ?? 0) + 1);
+  }
+
+  const today = new Date();
+  const todayUtc = new Date(
+    Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()),
+  );
+  const calendar: Array<{ date: string; count: number }> = [];
+
+  for (let offset = 139; offset >= 0; offset -= 1) {
+    const date = new Date(todayUtc);
+    date.setUTCDate(todayUtc.getUTCDate() - offset);
+    const dateKey = date.toISOString().slice(0, 10);
+    calendar.push({
+      date: dateKey,
+      count: dailyCounts.get(dateKey) ?? 0,
+    });
+  }
+
+  const sortedActiveDates = Array.from(dailyCounts.keys()).sort();
+
+  let longest = 0;
+  let running = 0;
+  let previousDate: Date | null = null;
+
+  for (const dateKey of sortedActiveDates) {
+    const currentDate = new Date(`${dateKey}T00:00:00.000Z`);
+
+    if (previousDate) {
+      const diffDays =
+        (currentDate.getTime() - previousDate.getTime()) / (1000 * 60 * 60 * 24);
+      running = diffDays === 1 ? running + 1 : 1;
+    } else {
+      running = 1;
+    }
+
+    longest = Math.max(longest, running);
+    previousDate = currentDate;
+  }
+
+  let current = 0;
+  for (let offset = 0; offset < 366; offset += 1) {
+    const date = new Date(todayUtc);
+    date.setUTCDate(todayUtc.getUTCDate() - offset);
+    const dateKey = date.toISOString().slice(0, 10);
+
+    if ((dailyCounts.get(dateKey) ?? 0) > 0) {
+      current += 1;
+    } else {
+      break;
+    }
+  }
+
+  return {
+    current,
+    longest,
+    activeDays: dailyCounts.size,
+    calendar,
+  };
+}
+
 export async function GET(request: NextRequest) {
   const handle = request.nextUrl.searchParams.get("handle")?.trim();
 
@@ -211,6 +290,7 @@ export async function GET(request: NextRequest) {
             (sum, contest) => sum + (contest.newRating - contest.oldRating),
             0,
           ) / ratingHistory.length;
+    const streak = buildStreakData(submissions);
 
     const payload: DashboardPayload = {
       profile: {
@@ -227,6 +307,7 @@ export async function GET(request: NextRequest) {
         activeWindow: buildActivityWindow(submissions.slice(0, 500)),
         lastUpdatedAt: new Date().toISOString(),
       },
+      streak,
       ratingHistory: ratingHistory.map((contest) => ({
         contest: contest.contestName,
         shortDate: formatDate(contest.ratingUpdateTimeSeconds, true),

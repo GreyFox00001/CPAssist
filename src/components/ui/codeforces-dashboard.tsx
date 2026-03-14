@@ -5,10 +5,13 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Activity,
   BarChart3,
+  CalendarRange,
   Clock3,
+  Flame,
   LoaderCircle,
   RefreshCw,
   Search,
+  Sparkles,
   Swords,
   Trophy,
 } from "lucide-react";
@@ -42,6 +45,15 @@ type DashboardData = {
     averageRatingChange: number;
     activeWindow: string;
     lastUpdatedAt: string;
+  };
+  streak: {
+    current: number;
+    longest: number;
+    activeDays: number;
+    calendar: Array<{
+      date: string;
+      count: number;
+    }>;
   };
   ratingHistory: Array<{
     contest: string;
@@ -89,6 +101,78 @@ function formatTooltipValue(
   }
 
   return [typeof value === "number" || typeof value === "string" ? value : "-", label];
+}
+
+function getStreakLevel(count: number) {
+  if (count === 0) return "bg-muted/60";
+  if (count <= 2) return "bg-cyan-900/70";
+  if (count <= 5) return "bg-cyan-700/80";
+  if (count <= 9) return "bg-cyan-500/85";
+  return "bg-emerald-400";
+}
+
+function formatCalendarDate(date: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(`${date}T00:00:00.000Z`));
+}
+
+type CalendarCell = {
+  date: string;
+  count: number;
+} | null;
+
+function getMondayIndex(date: Date) {
+  return (date.getUTCDay() + 6) % 7;
+}
+
+function buildCalendarGrid(calendar: DashboardData["streak"]["calendar"]) {
+  if (calendar.length === 0) {
+    return { weeks: [] as CalendarCell[][], monthLabels: [] as string[] };
+  }
+
+  const firstDate = new Date(`${calendar[0].date}T00:00:00.000Z`);
+  const lastDate = new Date(`${calendar[calendar.length - 1].date}T00:00:00.000Z`);
+
+  const gridStart = new Date(firstDate);
+  gridStart.setUTCDate(firstDate.getUTCDate() - getMondayIndex(firstDate));
+
+  const gridEnd = new Date(lastDate);
+  gridEnd.setUTCDate(lastDate.getUTCDate() + (6 - getMondayIndex(lastDate)));
+
+  const calendarByDate = new Map(calendar.map((day) => [day.date, day]));
+  const weeks: CalendarCell[][] = [];
+  const monthLabels: string[] = [];
+
+  const cursor = new Date(gridStart);
+  while (cursor <= gridEnd) {
+    const week: CalendarCell[] = [];
+    let weekLabel = "";
+
+    for (let dayIndex = 0; dayIndex < 7; dayIndex += 1) {
+      const dateKey = cursor.toISOString().slice(0, 10);
+      const day = calendarByDate.get(dateKey) ?? null;
+
+      if (!weekLabel && day) {
+        weekLabel = new Intl.DateTimeFormat("en-US", {
+          month: "short",
+          timeZone: "UTC",
+        }).format(cursor);
+      }
+
+      week.push(day);
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
+    }
+
+    const previousLabel = monthLabels[monthLabels.length - 1];
+    monthLabels.push(weekLabel !== previousLabel ? weekLabel : "");
+    weeks.push(week);
+  }
+
+  return { weeks, monthLabels };
 }
 
 function MetricCard({
@@ -209,6 +293,13 @@ export function CodeforcesDashboard() {
       timeStyle: "short",
     }).format(new Date(data.metrics.lastUpdatedAt));
   }, [data?.metrics.lastUpdatedAt]);
+  const streakCalendar = useMemo(
+    () =>
+      data
+        ? buildCalendarGrid(data.streak.calendar)
+        : { weeks: [] as CalendarCell[][], monthLabels: [] as string[] },
+    [data],
+  );
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -237,7 +328,7 @@ export function CodeforcesDashboard() {
                 The dashboard pulls live data for the selected ID and shows total
                 solved problems, current rating, average rating change per contest,
                 the most active submission window, rating trend, solved-by-rating
-                breakdown, and recent contests.
+                breakdown, recent contests, and a submission streak calendar.
               </p>
             </div>
 
@@ -293,7 +384,7 @@ export function CodeforcesDashboard() {
           <>
             <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
               <div className="rounded-4xl border border-border/60 bg-card/90 p-6 shadow-sm">
-                <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+                <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
                   <div className="flex items-center gap-4">
                     <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-muted font-black uppercase text-primary">
                       {data.profile.handle.slice(0, 2)}
@@ -307,7 +398,7 @@ export function CodeforcesDashboard() {
                         {data.profile.handle}
                       </h2>
                       <p className="text-sm text-muted-foreground">
-                        {data.profile.name} · {data.profile.rank}
+                        {data.profile.name} - {data.profile.rank}
                       </p>
                     </div>
                   </div>
@@ -326,6 +417,112 @@ export function CodeforcesDashboard() {
                       <RefreshCw className="mr-2 h-4 w-4" />
                       Refresh
                     </Button>
+                  </div>
+                </div>
+
+                <div className="mt-8 grid gap-6">
+                  <div className="rounded-3xl border border-border/60 bg-muted/20 p-4 md:p-5">
+                    <div className="mb-4 flex items-center justify-between gap-3">
+                      <div>
+                        <h3 className="text-lg font-bold">Submission Streak Calendar</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Last 140 days of Codeforces submission activity.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>Less</span>
+                        <span className="h-3 w-3 rounded-sm bg-muted/60" />
+                        <span className="h-3 w-3 rounded-sm bg-cyan-900/70" />
+                        <span className="h-3 w-3 rounded-sm bg-cyan-700/80" />
+                        <span className="h-3 w-3 rounded-sm bg-cyan-500/85" />
+                        <span className="h-3 w-3 rounded-sm bg-emerald-400" />
+                        <span>More</span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-[auto_1fr] gap-3">
+                      <div className="mt-6 grid grid-rows-7 gap-1.5 text-[11px] text-muted-foreground">
+                        {["Mon", "", "Wed", "", "Fri", "", "Sun"].map((label, index) => (
+                          <span key={`${label}-${index}`} className="flex h-4 items-center">
+                            {label}
+                          </span>
+                        ))}
+                      </div>
+
+                      <div className="min-w-0">
+                        <div
+                          className="mb-2 grid gap-1.5 text-[11px] text-muted-foreground"
+                          style={{
+                            gridTemplateColumns: `repeat(${streakCalendar.weeks.length}, minmax(0, 1fr))`,
+                          }}
+                        >
+                          {streakCalendar.monthLabels.map((label, index) => (
+                            <span key={`${label}-${index}`} className="truncate">
+                              {label}
+                            </span>
+                          ))}
+                        </div>
+
+                        <div
+                          className="grid gap-1.5"
+                          style={{
+                            gridTemplateColumns: `repeat(${streakCalendar.weeks.length}, minmax(0, 1fr))`,
+                          }}
+                        >
+                          {streakCalendar.weeks.map((week, weekIndex) => (
+                            <div key={`week-${weekIndex}`} className="grid grid-rows-7 gap-1.5">
+                              {week.map((day, dayIndex) =>
+                                day ? (
+                                  <div
+                                    key={day.date}
+                                    title={`${formatCalendarDate(day.date)}: ${day.count} submissions`}
+                                    className={`aspect-square w-full rounded-sm border border-border/40 ${getStreakLevel(day.count)}`}
+                                  />
+                                ) : (
+                                  <div
+                                    key={`empty-${weekIndex}-${dayIndex}`}
+                                      className="aspect-square w-full rounded-sm opacity-0"
+                                  />
+                                ),
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <div className="rounded-3xl border border-border/60 bg-muted/30 p-4">
+                      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                        <Flame className="h-4 w-4 text-orange-400" />
+                        Current streak
+                      </div>
+                      <p className="mt-3 text-4xl font-black tracking-tight">
+                        {data.streak.current}
+                      </p>
+                      <p className="text-sm text-muted-foreground">consecutive days</p>
+                    </div>
+                    <div className="rounded-3xl border border-border/60 bg-muted/30 p-4">
+                      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                        <Sparkles className="h-4 w-4 text-cyan-400" />
+                        Longest streak
+                      </div>
+                      <p className="mt-3 text-4xl font-black tracking-tight">
+                        {data.streak.longest}
+                      </p>
+                      <p className="text-sm text-muted-foreground">best run recorded</p>
+                    </div>
+                    <div className="rounded-3xl border border-border/60 bg-muted/30 p-4">
+                      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                        <CalendarRange className="h-4 w-4 text-emerald-400" />
+                        Active days
+                      </div>
+                      <p className="mt-3 text-4xl font-black tracking-tight">
+                        {data.streak.activeDays}
+                      </p>
+                      <p className="text-sm text-muted-foreground">days with submissions</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -387,7 +584,7 @@ export function CodeforcesDashboard() {
                         tickLine={false}
                         axisLine={false}
                         width={48}
-                        domain={[ "dataMin - 50", chartCeiling ?? "dataMax + 50" ]}
+                        domain={["dataMin - 50", chartCeiling ?? "dataMax + 50"]}
                       />
                       <Tooltip
                         formatter={(value) => formatTooltipValue(value, "Rating")}

@@ -3,7 +3,7 @@ import { ArrowRight, ArrowRightLeft } from "lucide-react";
 
 export function HeadToHead() {
   return (
-    <div className="relative group p-8 rounded-3xl border border-border bg-card/40 backdrop-blur-xl overflow-hidden shadow-2xl h-full min-h-[560px] flex flex-col">
+    <div className="relative group p-8 rounded-3xl border border-border bg-card/40 backdrop-blur-xl overflow-hidden shadow-2xl h-full min-h-140 flex flex-col">
       <div className="mb-8 rounded-2xl border border-border bg-background/30 px-4 py-3">
         <ArrowRightLeft className="w-5 h-5 text-primary" />
       </div>

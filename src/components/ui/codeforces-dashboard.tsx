@@ -402,16 +402,16 @@ export function CodeforcesDashboard() {
   return (
     <section className="min-h-screen bg-background px-4 py-10 text-foreground md:px-8">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
-        <div className="overflow-hidden rounded-4xl border border-border/60 bg-[radial-gradient(circle_at_top,rgba(14,165,233,0.28),transparent_52%),linear-gradient(140deg,rgba(255,255,255,0.95),rgba(240,249,255,0.9))] p-6 text-slate-900 shadow-2xl shadow-slate-200/60 dark:bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.2),transparent_42%),linear-gradient(135deg,rgba(15,23,42,0.98),rgba(15,23,42,0.9))] dark:text-white dark:shadow-slate-950/20 md:p-8">
+        <div className="overflow-hidden rounded-4xl border border-border/60 p-6 shadow-2xl [background-image:var(--cf-hero-bg)] [box-shadow:var(--cf-hero-shadow)] text-(--cf-hero-text) md:p-8">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
-              <p className="text-sm font-semibold uppercase tracking-[0.28em] text-cyan-700 dark:text-cyan-300/90">
+              <p className="text-sm font-semibold uppercase tracking-[0.28em] text-(--cf-hero-kicker)">
                 Codeforces Dashboard
               </p>
               <h1 className="mt-3 text-4xl font-black tracking-tight md:text-5xl">
                 Enter a Codeforces handle, then inspect live profile performance.
               </h1>
-              <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-700 dark:text-slate-300 md:text-base">
+              <p className="mt-4 max-w-2xl text-sm leading-6 text-(--cf-hero-desc) md:text-base">
                 The dashboard pulls live data for the selected ID and shows total
                 solved problems, current rating, average rating change per contest,
                 the most active submission window, rating trend, solved-by-rating
@@ -421,19 +421,19 @@ export function CodeforcesDashboard() {
 
             <form
               onSubmit={handleSubmit}
-              className="flex w-full max-w-xl flex-col gap-3 rounded-3xl border border-sky-200/60 bg-white/65 p-4 backdrop-blur md:flex-row dark:border-white/10 dark:bg-white/5"
+              className="flex w-full max-w-xl flex-col gap-3 rounded-3xl border p-4 backdrop-blur bg-(--cf-form-bg) border-(--cf-form-border) md:flex-row"
             >
               <label className="sr-only" htmlFor="cf-handle">
                 Codeforces handle
               </label>
               <div className="relative flex-1">
-                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500 dark:text-slate-400" />
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-(--cf-search-icon)" />
                 <input
                   id="cf-handle"
                   value={inputValue}
                   onChange={(event) => setInputValue(event.target.value)}
                   placeholder="Enter Codeforces handle"
-                  className="h-12 w-full rounded-2xl border border-sky-200/70 bg-white/85 pl-11 pr-4 text-sm text-foreground outline-none transition placeholder:text-muted-foreground focus:border-cyan-500 dark:border-white/10 dark:bg-slate-950/60 dark:text-white dark:focus:border-cyan-400"
+                  className="h-12 w-full rounded-2xl border pl-11 pr-4 text-sm outline-none transition placeholder:text-muted-foreground bg-(--cf-input-bg) border-(--cf-input-border) text-(--cf-input-text) focus:border-(--cf-input-focus)"
                 />
               </div>
               <Button type="submit" className="h-12 rounded-2xl px-6">

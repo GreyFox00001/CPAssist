@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   Activity,
   BarChart3,
   CalendarRange,
   Clock3,
   Flame,
+  LogOut,
   LoaderCircle,
   RefreshCw,
   Search,
@@ -31,6 +32,7 @@ import {
 import type { TooltipContentProps, TooltipValueType } from "recharts";
 
 import { Button } from "@/components/ui/button";
+import { createClient } from "@/lib/supabase/client";
 
 type DashboardData = {
   profile: {
@@ -287,26 +289,47 @@ function MetricCard({
 
 export function CodeforcesDashboard() {
   const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-
-  const initialHandle = searchParams.get("handle") ?? "";
-  const [inputValue, setInputValue] = useState(initialHandle);
-  const [activeHandle, setActiveHandle] = useState(initialHandle);
+  const [userId, setUserId] = useState("");
+  const [inputValue, setInputValue] = useState("");
+  const [activeHandle, setActiveHandle] = useState("");
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [setupRequired, setSetupRequired] = useState(false);
 
-  async function loadDashboard(handle: string) {
-    const normalized = handle.trim();
-    if (!normalized) return;
+  async function loadDashboard(
+    targetUserId: string,
+    handle = "",
+    refresh = false,
+  ) {
+    const normalizedUserId = targetUserId.trim();
+    const normalizedHandle = handle.trim();
+
+    if (!normalizedUserId) {
+      setLoading(false);
+      setError("You need to sign in before loading your dashboard.");
+      return;
+    }
+
+    if (refresh && !normalizedHandle) {
+      setLoading(false);
+      setError("Enter your Codeforces handle before refreshing.");
+      return;
+    }
 
     setLoading(true);
     setError(null);
 
     try {
+      const url = refresh
+        ? `/api/codeforces?userId=${encodeURIComponent(
+            normalizedUserId,
+          )}&handle=${encodeURIComponent(normalizedHandle)}&refresh=true`
+        : `/api/codeforces?userId=${encodeURIComponent(normalizedUserId)}`;
+
       const response = await fetch(
-        `/api/codeforces?handle=${encodeURIComponent(normalized)}`,
+        url,
         {
           cache: "no-store",
         },
@@ -314,12 +337,21 @@ export function CodeforcesDashboard() {
 
       const payload = (await response.json()) as DashboardData & { error?: string };
 
+      if (response.status === 404 && !refresh) {
+        setSetupRequired(true);
+        setData(null);
+        setActiveHandle("");
+        return;
+      }
+
       if (!response.ok) {
         throw new Error(payload.error ?? "Unable to fetch Codeforces data.");
       }
 
       setData(payload);
-      setActiveHandle(normalized);
+      setInputValue(payload.profile.handle);
+      setActiveHandle(payload.profile.handle);
+      setSetupRequired(false);
     } catch (fetchError) {
       const message =
         fetchError instanceof Error
@@ -333,19 +365,38 @@ export function CodeforcesDashboard() {
   }
 
   useEffect(() => {
-    if (!initialHandle) return;
-    void loadDashboard(initialHandle);
-  }, [initialHandle]);
+    let mounted = true;
 
-  useEffect(() => {
-    if (!activeHandle) return;
+    async function loadSession() {
+      const supabase = createClient();
+      const { data: userData, error: userError } = await supabase.auth.getUser();
 
-    const timer = window.setInterval(() => {
-      void loadDashboard(activeHandle);
-    }, 60_000);
+      if (!mounted) return;
 
-    return () => window.clearInterval(timer);
-  }, [activeHandle]);
+      if (userError) {
+        setLoading(false);
+        router.replace("/login");
+        return;
+      }
+
+      const activeUserId = userData.user?.id;
+
+      if (!activeUserId) {
+        setLoading(false);
+        router.replace("/login");
+        return;
+      }
+
+      setUserId(activeUserId);
+      void loadDashboard(activeUserId);
+    }
+
+    void loadSession();
+
+    return () => {
+      mounted = false;
+    };
+  }, [router]);
 
   const contestCount = data?.ratingHistory.length ?? 0;
   const ratingChartData = useMemo(() => {
@@ -393,21 +444,45 @@ export function CodeforcesDashboard() {
     const normalized = inputValue.trim();
     if (!normalized) return;
 
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("handle", normalized);
-    router.replace(`${pathname}?${params.toString()}`);
-    void loadDashboard(normalized);
+    void loadDashboard(userId, normalized, true);
+  }
+
+  async function handleLogout() {
+    setLoggingOut(true);
+    setLoading(false);
+    setError(null);
+    setData(null);
+    setSetupRequired(false);
+    setUserId("");
+    setInputValue("");
+    setActiveHandle("");
+
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.replace("/login");
   }
 
   return (
     <section className="min-h-screen bg-background px-4 py-10 text-foreground md:px-8">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
         <div className="overflow-hidden rounded-4xl border border-border/60 p-6 shadow-2xl [background-image:var(--cf-hero-bg)] [box-shadow:var(--cf-hero-shadow)] text-(--cf-hero-text) md:p-8">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm font-semibold uppercase tracking-[0.28em] text-(--cf-hero-kicker)">
+              Codeforces Dashboard
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-2xl border-white/20 bg-white/10 text-(--cf-hero-text) backdrop-blur hover:bg-white/20"
+              disabled={loggingOut}
+              onClick={() => void handleLogout()}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              {loggingOut ? "Logging out..." : "Logout"}
+            </Button>
+          </div>
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
-              <p className="text-sm font-semibold uppercase tracking-[0.28em] text-(--cf-hero-kicker)">
-                Codeforces Dashboard
-              </p>
               <h1 className="mt-3 text-4xl font-black tracking-tight md:text-5xl">
                 Enter a Codeforces handle, then inspect live profile performance.
               </h1>
@@ -443,11 +518,14 @@ export function CodeforcesDashboard() {
           </div>
         </div>
 
-        {!activeHandle && !loading ? (
+        {setupRequired && !loading ? (
           <div className="rounded-4xl border border-dashed border-border bg-card/50 px-6 py-16 text-center">
-            <p className="text-lg font-semibold">Enter a Codeforces ID to begin.</p>
+            <p className="text-lg font-semibold">
+              Link your Codeforces handle to begin.
+            </p>
             <p className="mt-2 text-sm text-muted-foreground">
-              Example handles: `tourist`, `Benq`, `Petr`.
+              Submit your handle once, then future dashboard loads will use the
+              cached data for your account.
             </p>
           </div>
         ) : null}
@@ -456,7 +534,7 @@ export function CodeforcesDashboard() {
           <div className="flex min-h-60 items-center justify-center rounded-4xl border border-border bg-card/70">
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
               <LoaderCircle className="h-5 w-5 animate-spin" />
-              Fetching live Codeforces data...
+              Loading Codeforces dashboard data...
             </div>
           </div>
         ) : null}
@@ -499,7 +577,8 @@ export function CodeforcesDashboard() {
                       type="button"
                       variant="outline"
                       className="rounded-2xl"
-                      onClick={() => void loadDashboard(activeHandle)}
+                      disabled={loading}
+                      onClick={() => void loadDashboard(userId, activeHandle, true)}
                     >
                       <RefreshCw className="mr-2 h-4 w-4" />
                       Refresh

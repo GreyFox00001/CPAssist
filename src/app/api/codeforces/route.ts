@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
 type CodeforcesResponse<T> = {
   status: "OK" | "FAILED";
@@ -87,6 +88,11 @@ type DashboardPayload = {
 };
 
 const CODEFORCES_API_BASE = "https://codeforces.com/api";
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+);
 
 async function fetchCodeforces<T>(path: string): Promise<T> {
   const response = await fetch(`${CODEFORCES_API_BASE}${path}`, {
@@ -245,16 +251,41 @@ function buildStreakData(submissions: CodeforcesSubmission[]) {
 }
 
 export async function GET(request: NextRequest) {
+  const userId = request.nextUrl.searchParams.get("userId")?.trim();
   const handle = request.nextUrl.searchParams.get("handle")?.trim();
+  const refresh = request.nextUrl.searchParams.get("refresh") === "true";
 
-  if (!handle) {
+  if (!userId) {
     return NextResponse.json(
-      { error: "Missing required query parameter: handle" },
+      { error: "Missing required query parameter: userId" },
       { status: 400 },
     );
   }
 
   try {
+    if (!refresh) {
+      const { data: cachedData, error: cachedError } = await supabase
+        .from("user_cf_data")
+        .select("dashboard_payload")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (cachedError) {
+        throw new Error(cachedError.message);
+      }
+
+      if (cachedData?.dashboard_payload) {
+        return NextResponse.json(cachedData.dashboard_payload);
+      }
+    }
+
+    if (!handle) {
+      return NextResponse.json(
+        { error: "No Codeforces handle linked to this user yet." },
+        { status: 404 },
+      );
+    }
+
     const [users, ratingHistory, submissions] = await Promise.all([
       fetchCodeforces<CodeforcesUser[]>(
         `/user.info?handles=${encodeURIComponent(handle)}`,
@@ -329,6 +360,16 @@ export async function GET(request: NextRequest) {
           newRating: contest.newRating,
         })),
     };
+
+    const { error: upsertError } = await supabase.from("user_cf_data").upsert({
+      user_id: userId,
+      cf_handle: user.handle,
+      dashboard_payload: payload,
+    });
+
+    if (upsertError) {
+      throw new Error(upsertError.message);
+    }
 
     return NextResponse.json(payload);
   } catch (error) {

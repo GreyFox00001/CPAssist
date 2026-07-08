@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
 
 type PrimaryAuthMode = "login" | "signup";
 type AuthMode = PrimaryAuthMode | "reset";
@@ -165,6 +166,27 @@ export function AuthForm({
   }, [initialMode]);
 
   useEffect(() => {
+    let mounted = true;
+
+    async function redirectAuthenticatedUser() {
+      const supabase = createClient();
+      const { data } = await supabase.auth.getUser();
+
+      if (!mounted) return;
+
+      if (data.user) {
+        router.replace("/dashboard");
+      }
+    }
+
+    void redirectAuthenticatedUser();
+
+    return () => {
+      mounted = false;
+    };
+  }, [router]);
+
+  useEffect(() => {
     const savedEmail = localStorage.getItem("userEmail");
     const rememberMe = localStorage.getItem("rememberMe") === "true";
     if (savedEmail && authMode === "login") {
@@ -272,21 +294,14 @@ export function AuthForm({
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       if (authMode === "login") {
-        const response = await fetch("/api/signIn", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email: formData.email,
-            password: formData.password,
-          }),
+        const supabase = createClient();
+        const { error } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
         });
 
-        const result = await response.json();
-
-        if (!response.ok) {
-          setErrors({ general: result.message || "Login failed" });
+        if (error) {
+          setErrors({ general: error.message || "Login failed" });
           return;
         }
 
@@ -302,7 +317,7 @@ export function AuthForm({
 
         onSuccess?.({ email: formData.email });
 
-        router.push(result.redirectTo || "/dashboard");
+        router.replace("/dashboard");
       }
       else if (authMode === "signup" && registrationStep === "details") {
         

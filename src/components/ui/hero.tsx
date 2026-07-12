@@ -42,8 +42,9 @@ const Hero = React.forwardRef<HTMLElement, HeroProps>(
     return (
         <section
         ref={ref}
+        suppressHydrationWarning
         className={cn(
-          "relative z-0 flex min-h-svh w-full flex-col items-center justify-center overflow-hidden rounded-md bg-background",
+          "relative z-0 flex min-h-svh w-full flex-col items-center justify-center overflow-hidden rounded-md bg-transparent",
           className,
         )}
         {...props}
@@ -86,8 +87,8 @@ const Hero = React.forwardRef<HTMLElement, HeroProps>(
               }}
               className="absolute inset-auto right-1/2 h-56 overflow-visible w-120 bg-gradient-conic from-primary/60 via-transparent to-transparent [--conic-position:from_70deg_at_center_top]"
             >
-              <div className="absolute w-fulleft-0 bg-background h-40 bottom-0 z-20 mask-[linear-gradient(to_top,white,transparent)]" />
-              <div className="absolute w-40 h-fulleft-0 bg-background bottom-0 z-20 mask-[linear-gradient(to_right,white,transparent)]" />
+              <div className="absolute w-fulleft-0 bg-transparent h-40 bottom-0 z-20 mask-[linear-gradient(to_top,white,transparent)]" />
+              <div className="absolute w-40 h-fulleft-0 bg-transparent bottom-0 z-20 mask-[linear-gradient(to_right,white,transparent)]" />
             </motion.div>
 
             {/* Right gradient cone */}
@@ -101,8 +102,8 @@ const Hero = React.forwardRef<HTMLElement, HeroProps>(
               }}
               className="absolute inset-auto left-1/2 h-56 w-120 bg-gradient-conic from-transparent via-transparent to-primary/60 [--conic-position:from_290deg_at_center_top]"
             >
-              <div className="absolute w-40 h-full right-0 bg-background bottom-0 z-20 mask-[linear-gradient(to_left,white,transparent)]" />
-              <div className="absolute w-full right-0 bg-background h-40 bottom-0 z-20 mask-[linear-gradient(to_top,white,transparent)]" />
+              <div className="absolute w-40 h-full right-0 bg-transparent bottom-0 z-20 mask-[linear-gradient(to_left,white,transparent)]" />
+              <div className="absolute w-full right-0 bg-transparent h-40 bottom-0 z-20 mask-[linear-gradient(to_top,white,transparent)]" />
             </motion.div>
           </div>
         )}

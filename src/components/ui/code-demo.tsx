@@ -53,7 +53,7 @@ export function CodeDemo() {
     }
 
     return (
-        <section className="py-24 relative bg-background overflow-hidden border-y border-border/50">
+        <section className="py-24 relative bg-transparent overflow-hidden border-y border-border/50">
             <div className="container px-4 mx-auto z-10">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                     <div>
@@ -87,7 +87,7 @@ export function CodeDemo() {
                         </div>
                     </div>
 
-                    <div className="relative aspect-square md:aspect-video bg-card/30 rounded-3xl border border-border backdrop-blur-sm p-8 overflow-hidden">
+                    <div className="relative aspect-square md:aspect-video bg-transparent rounded-3xl border border-border/70 backdrop-blur-sm p-8 overflow-hidden">
                         <svg className="w-full h-full" viewBox="0 0 400 200">
                             {/* Edges */}
                             {edges.map((edge, i) => {
@@ -132,7 +132,7 @@ export function CodeDemo() {
                         </svg>
 
                         {/* Floating Stats Card */}
-                        <div className="absolute bottom-6 right-6 p-4 rounded-xl border border-border bg-background/80 backdrop-blur-md shadow-xl">
+                        <div className="absolute bottom-6 right-6 p-4 rounded-xl border border-border/80 bg-transparent backdrop-blur-md shadow-xl">
                             <div className="text-[10px] text-muted-foreground uppercase font-bold mb-2">Queue State</div>
                             <div className="flex gap-2">
                                 {visited.slice(-3).map((v, i) => (

@@ -55,7 +55,7 @@ export const CyberneticBentoGrid = () => {
                 streams and visualizations.
               </p>
             </div>
-            <div className="mt-4 h-48 bg-neutral-800 rounded-lg flex items-center justify-center text-gray-500 overflow-hidden">
+            <div className="mt-4 h-48 bg-transparent rounded-lg flex items-center justify-center text-gray-500 overflow-hidden">
               <img
                 src="https://images.unsplash.com/photo-1551281044-8b5bdc2d8f5e?auto=format&fit=crop&w=1600&q=80"
                 alt="Analytics chart panel"

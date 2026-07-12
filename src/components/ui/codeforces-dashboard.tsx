@@ -32,6 +32,7 @@ import {
 import type { TooltipContentProps, TooltipValueType } from "recharts";
 
 import { Button } from "@/components/ui/button";
+import { ShootingStars } from "@/components/ui/shooting-stars";
 import { createClient } from "@/lib/supabase/client";
 
 type DashboardData = {
@@ -463,8 +464,37 @@ export function CodeforcesDashboard() {
   }
 
   return (
-    <section className="min-h-screen bg-background px-4 py-10 text-foreground md:px-8">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
+    <section className="relative min-h-screen overflow-hidden bg-background px-4 py-10 text-foreground md:px-8">
+      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_14%_12%,rgba(14,165,233,0.18),transparent_30%),radial-gradient(circle_at_88%_18%,rgba(34,197,94,0.14),transparent_28%),radial-gradient(circle_at_50%_88%,rgba(6,182,212,0.16),transparent_34%)] dark:bg-[radial-gradient(circle_at_14%_12%,rgba(103,232,249,0.18),transparent_30%),radial-gradient(circle_at_88%_18%,rgba(74,222,128,0.13),transparent_28%),radial-gradient(circle_at_50%_88%,rgba(56,189,248,0.16),transparent_34%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(1px_1px_at_24px_32px,var(--foreground),transparent),radial-gradient(1px_1px_at_96px_124px,var(--foreground),transparent),radial-gradient(1px_1px_at_172px_68px,var(--foreground),transparent),radial-gradient(1px_1px_at_212px_184px,var(--foreground),transparent)] bg-size-[240px_240px] opacity-[0.08] dark:opacity-[0.14]" />
+      </div>
+      <div className="pointer-events-none fixed inset-0 z-30 overflow-hidden">
+        <div className="absolute inset-0 starfield-overlay" />
+      </div>
+      <ShootingStars
+        starColor="#0891b2"
+        trailColor="#60a5fa"
+        minSpeed={14}
+        maxSpeed={32}
+        minDelay={900}
+        maxDelay={2600}
+        starWidth={22}
+        starHeight={2}
+        className="pointer-events-none fixed inset-0 z-40 opacity-70 drop-shadow-[0_0_12px_rgba(14,165,233,0.55)] dark:opacity-80 dark:drop-shadow-[0_0_14px_rgba(103,232,249,0.75)]"
+      />
+      <ShootingStars
+        starColor="#16a34a"
+        trailColor="#06b6d4"
+        minSpeed={10}
+        maxSpeed={26}
+        minDelay={1500}
+        maxDelay={3600}
+        starWidth={18}
+        starHeight={2}
+        className="pointer-events-none fixed inset-0 z-40 opacity-55 drop-shadow-[0_0_10px_rgba(34,197,94,0.45)] dark:opacity-65 dark:drop-shadow-[0_0_12px_rgba(34,197,94,0.65)]"
+      />
+      <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-6">
         <div className="overflow-hidden rounded-4xl border border-border/60 p-6 shadow-2xl [background-image:var(--cf-hero-bg)] [box-shadow:var(--cf-hero-shadow)] text-(--cf-hero-text) md:p-8">
           <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm font-semibold uppercase tracking-[0.28em] text-(--cf-hero-kicker)">
@@ -854,7 +884,7 @@ export function CodeforcesDashboard() {
               </div>
             </div>
 
-            <div className="rounded-4xl border border-border/60 bg-card/90 p-6 shadow-sm">
+            <div className="rounded-4xl border border-border/60 bg-card/65 p-6 shadow-sm backdrop-blur-sm">
               <div className="mb-6 flex items-center gap-3">
                 <Swords className="h-5 w-5 text-primary" />
                 <div>

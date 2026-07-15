@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { GoogleAuthButton } from "@/components/google-auth-button";
 import { AuthPageShell } from "@/components/blocks/auth-page-shell";
 import { AuthForm } from "@/components/ui/premium-auth";
 
@@ -11,6 +12,23 @@ export default function SignupPage() {
       gridClassName="lg:grid-cols-[0.95fr_1.05fr]"
     >
       <section className="order-2 rounded-4xl border border-border/70 bg-background/85 shadow-[0_30px_80px_-40px_rgba(15,23,42,0.45)] backdrop-blur lg:order-1">
+        <div className="px-6 pt-6">
+          <GoogleAuthButton />
+        </div>
+
+        <div className="px-6 pb-2">
+          <div className="relative py-4">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t border-border/70" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase tracking-[0.2em]">
+              <span className="bg-background px-3 text-muted-foreground">
+                Or continue with
+              </span>
+            </div>
+          </div>
+        </div>
+
         <AuthForm initialMode="signup" />
       </section>
 

@@ -1,9 +1,11 @@
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
-    request,
+    request: {
+      headers: request.headers,
+    },
   });
 
   const supabase = createServerClient(
@@ -20,7 +22,9 @@ export async function middleware(request: NextRequest) {
           });
 
           response = NextResponse.next({
-            request,
+            request: {
+              headers: request.headers,
+            },
           });
 
           cookiesToSet.forEach(({ name, value, options }) => {
@@ -28,34 +32,26 @@ export async function middleware(request: NextRequest) {
           });
         },
       },
-    },
+    }
   );
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
   const pathname = request.nextUrl.pathname;
 
-  if (!user && pathname.startsWith("/dashboard")) {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/login";
-    redirectUrl.search = "";
-    return NextResponse.redirect(redirectUrl);
+  if (pathname.startsWith("/dashboard") && !user) {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (
-    user &&
-    (pathname === "/login" || pathname === "/signup" || pathname === "/signin")
-  ) {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/dashboard";
-    redirectUrl.search = "";
-    return NextResponse.redirect(redirectUrl);
+  if ((pathname === "/login" || pathname === "/signin" || pathname === "/signup") && user) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   return response;
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login", "/signup", "/signin"],
+  matcher: ["/dashboard/:path*", "/login", "/signin", "/signup"],
 };

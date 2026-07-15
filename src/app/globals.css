@@ -146,8 +146,8 @@ body {
     radial-gradient(1.7px 1.7px at 236px 202px, rgba(14, 116, 144, 0.52), transparent);
   background-size: 260px 260px;
   background-repeat: repeat;
-  opacity: 0.56;
-  mix-blend-mode: multiply;
+  opacity: 0.72;
+  mix-blend-mode: screen;
   animation: starfield-twinkle 5.5s ease-in-out infinite;
 }
 
@@ -161,7 +161,7 @@ body {
     radial-gradient(1.1px 1.1px at 220px 210px, rgba(30, 41, 59, 0.48), transparent);
   background-size: 320px 320px;
   background-repeat: repeat;
-  opacity: 0.42;
+  opacity: 0.55;
   animation: starfield-drift 28s linear infinite;
 }
 
@@ -173,7 +173,7 @@ body {
     radial-gradient(1.4px 1.4px at 212px 184px, rgba(125, 211, 252, 0.9), transparent),
     radial-gradient(1.7px 1.7px at 60px 44px, rgba(255, 255, 255, 0.84), transparent),
     radial-gradient(1.7px 1.7px at 236px 202px, rgba(186, 230, 253, 0.88), transparent);
-  opacity: 0.5;
+  opacity: 0.62;
   mix-blend-mode: screen;
 }
 
@@ -182,7 +182,7 @@ body {
     radial-gradient(1.1px 1.1px at 80px 120px, rgba(255, 255, 255, 0.72), transparent),
     radial-gradient(1.1px 1.1px at 180px 40px, rgba(125, 211, 252, 0.7), transparent),
     radial-gradient(1.1px 1.1px at 220px 210px, rgba(255, 255, 255, 0.66), transparent);
-  opacity: 0.38;
+  opacity: 0.5;
 }
 
 .main-container {

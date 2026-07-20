@@ -21,11 +21,10 @@ import { createClient } from "@/lib/supabase/client";
 
 type PrimaryAuthMode = "login" | "signup";
 type AuthMode = PrimaryAuthMode | "reset";
-type RegistrationStep = "details" | "verification" | "complete";
+type RegistrationStep = "details" | "emailSent";
 
 interface AuthFormProps {
   onSuccess?: (userData: { email: string; name?: string }) => void;
-  onClose?: () => void;
   initialMode?: PrimaryAuthMode;
   className?: string;
 }
@@ -38,7 +37,6 @@ interface FormData {
   phone: string;
   agreeToTerms: boolean;
   rememberMe: boolean;
-  verificationCode: string;
 }
 
 interface FormErrors {
@@ -49,7 +47,6 @@ interface FormErrors {
   phone?: string;
   agreeToTerms?: string;
   general?: string;
-  verificationCode?: string;
 }
 
 const calculatePasswordStrength = (password: string) => {
@@ -134,7 +131,6 @@ const modeToggleButtonClassName =
 
 export function AuthForm({
   onSuccess,
-  onClose,
   initialMode = "login",
   className,
 }: AuthFormProps) {
@@ -156,7 +152,6 @@ export function AuthForm({
     phone: "",
     agreeToTerms: false,
     rememberMe: false,
-    verificationCode: "",
   });
   const authMode: AuthMode = isResetMode ? "reset" : initialMode;
 
@@ -230,20 +225,12 @@ export function AuthForm({
       if (field === "phone" && value && !/^\+?[\d\s\-()]+$/.test(String(value))) {
         return "Please enter a valid phone number";
       }
-      if (
-        field === "verificationCode" &&
-        authMode === "signup" &&
-        registrationStep === "verification" &&
-        !/^\d{6}$/.test(String(value))
-      ) {
-        return "Verification code must be 6 digits";
-      }
       if (field === "agreeToTerms" && authMode === "signup" && !value) {
         return "You must agree to the terms and conditions";
       }
       return "";
     },
-    [authMode, formData.password, registrationStep],
+    [authMode, formData.password],
   );
 
   const handleInputChange = useCallback(
@@ -271,7 +258,6 @@ export function AuthForm({
     const fieldsToValidate: (keyof FormData)[] =
       authMode === "reset" ? ["email"] : ["email", "password"];
     if (authMode === "signup") fieldsToValidate.push("name", "confirmPassword", "agreeToTerms");
-    if (registrationStep === "verification") fieldsToValidate.push("verificationCode");
     fieldsToValidate.forEach((field) => {
       const error = validateField(field, formData[field]);
       if (error) {
@@ -281,7 +267,7 @@ export function AuthForm({
     });
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
-  }, [authMode, formData, registrationStep, validateField]);
+  }, [authMode, formData, validateField]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -320,39 +306,43 @@ export function AuthForm({
         router.replace("/dashboard");
       }
       else if (authMode === "signup" && registrationStep === "details") {
-        
-        const response = await fetch("/api/signup",{
+        const response = await fetch("/api/signup", {
           method: "POST",
-          headers:{
-            "Content-Type": "application/json"
+          headers: {
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             name: formData.name,
             email: formData.email,
             password: formData.password,
-            phone: formData.phone
-          })
-        })
+            phone: formData.phone,
+          }),
+        });
 
-        const result = await response.json()
+        const result = (await response.json()) as { message?: string; error?: string };
 
-        if(!response.ok){
+        if (!response.ok) {
           setErrors({
-            general: result.message || "Signup failed"
-          })
-          return
+            general: result.message || result.error || "Signup failed",
+          });
+          return;
         }
 
-        setRegistrationStep("verification")
-        setSuccessMessage("Verification code sent to your email")
-
-      } else if (authMode === "signup") {
-        setRegistrationStep("complete");
-        setSuccessMessage("Email verified successfully!");
+        setRegistrationStep("emailSent");
+        setSuccessMessage(result.message || "Check your email to confirm your account.");
         onSuccess?.({ email: formData.email, name: formData.name });
       } else {
-        setSuccessMessage("Password reset email sent!");
-        window.setTimeout(() => navigateToMode("login"), 2000);
+        const supabase = createClient();
+        const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
+          redirectTo: `${window.location.origin}/api/auth/callback?next=/reset-password`,
+        });
+
+        if (error) {
+          setErrors({ general: error.message || "Password reset failed" });
+          return;
+        }
+
+        setSuccessMessage("Password reset email sent. Check your inbox for the secure reset link.");
       }
     } catch {
       setErrors({ general: "Authentication failed. Please try again." });
@@ -461,56 +451,23 @@ export function AuthForm({
           </>
         )}
 
-        {authMode === "signup" && registrationStep === "verification" && (
-          <>
-            <div className="mb-2 text-center">
-              <Mail className="mx-auto mb-3 h-12 w-12 text-primary" />
-              <p className="text-sm text-muted-foreground">
-                We&apos;ve sent a 6-digit code to <span className="font-medium">{formData.email}</span>
-              </p>
-            </div>
-            <input
-              type="text"
-              placeholder="Enter 6-digit code"
-              value={formData.verificationCode}
-              onChange={(e) => handleInputChange("verificationCode", e.target.value.replace(/\D/g, "").slice(0, 6))}
-              onBlur={() => handleFieldBlur("verificationCode")}
-              maxLength={6}
-              className={cn(baseInput, "border-input px-4 text-center font-mono text-2xl tracking-widest", errors.verificationCode && "border-destructive")}
-            />
-            {renderFieldError("code-error", errors.verificationCode)}
-            <button
-              type="submit"
-              disabled={isLoading || formData.verificationCode.length !== 6}
-              className={primaryButtonClassName}
-            >
-              {isLoading ? <Loader2 className="mx-auto h-5 w-5 animate-spin" /> : "Verify Email"}
-            </button>
-            <button
-              type="button"
-              onClick={() => setRegistrationStep("details")}
-              className={textActionButtonClassName}
-            >
-              Back to Details
-            </button>
-          </>
-        )}
-
-        {authMode === "signup" && registrationStep === "complete" && (
+        {authMode === "signup" && registrationStep === "emailSent" && (
           <div className="space-y-6 py-4 text-center">
             <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-400">
-              <Shield className="h-8 w-8" />
+              <Mail className="h-8 w-8" />
             </div>
             <div>
-              <h3 className="mb-2 text-2xl font-bold">Welcome Aboard!</h3>
-              <p className="text-muted-foreground">Your account has been created successfully.</p>
+              <h3 className="mb-2 text-2xl font-bold">Confirm Your Email</h3>
+              <p className="text-muted-foreground">
+                We sent a secure confirmation link to <span className="font-medium">{formData.email}</span>.
+              </p>
             </div>
             <button
               type="button"
-              onClick={onClose}
+              onClick={() => navigateToMode("login")}
               className={primaryButtonClassName}
             >
-              Get Started
+              Back to Login
             </button>
           </div>
         )}

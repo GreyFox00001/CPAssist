@@ -39,7 +39,7 @@ export default function Home() {
       />
       <div className="relative z-10">
         <Hero
-          title="CPAssist that works for you."
+          title="CPassist crafted for your journey"
           subtitle="Transform your learning with intelligent assistance. Simple, powerful, reliable."
           actions={[
             {

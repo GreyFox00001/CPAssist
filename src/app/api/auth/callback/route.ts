@@ -1,13 +1,18 @@
-import { NextResponse, type NextRequest } from 'next/server'
-import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from "next/server";
+import { createServerClient } from "@supabase/ssr";
+
+function getSafeRedirectPath(value: string | null) {
+  if (!value) return "/dashboard";
+  if (!value.startsWith("/") || value.startsWith("//")) return "/dashboard";
+  return value;
+}
 
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url)
-  const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/dashboard'
+  const { searchParams, origin } = new URL(request.url);
+  const code = searchParams.get("code");
+  const next = getSafeRedirectPath(searchParams.get("next"));
 
-  // Create the response object first so we can mutate its cookies
-  const response = NextResponse.redirect(`${origin}${next}`)
+  const response = NextResponse.redirect(`${origin}${next}`);
 
   if (code) {
     const supabase = createServerClient(
@@ -15,26 +20,24 @@ export async function GET(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          get(name: string) {
-            return request.cookies.get(name)?.value
+          getAll() {
+            return request.cookies.getAll();
           },
-          set(name: string, value: string, options: CookieOptions) {
-            response.cookies.set({ name, value, ...options })
-          },
-          remove(name: string, options: CookieOptions) {
-            response.cookies.delete({ name, ...options })
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              response.cookies.set(name, value, options);
+            });
           },
         },
-      }
-    )
+      },
+    );
 
-    const { error } = await supabase.auth.exchangeCodeForSession(code)
-    
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+
     if (!error) {
-      return response // Return the response containing the newly set session cookies
+      return response;
     }
   }
 
-  // Redirect to login page if there's an error
-  return NextResponse.redirect(`${origin}/login?error=auth-failed`)
+  return NextResponse.redirect(`${origin}/login?error=auth-failed`);
 }

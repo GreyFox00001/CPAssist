@@ -118,7 +118,7 @@ const Hero = React.forwardRef<HTMLElement, HeroProps>(
           <div className="flex flex-col items-center text-center space-y-4">
             <h1
               className={cn(
-                "text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight",
+                "text-4xl sm:text-5xl md:text-6xl lg:text-6xl italic font-bold tracking-tight",
                 titleClassName,
               )}
             >

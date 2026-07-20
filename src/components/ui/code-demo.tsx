@@ -1,8 +1,8 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { Share2, Zap, Play, RotateCcw } from "lucide-react"
+import React, { useState } from "react"
+import { motion } from "framer-motion"
+import { Zap, Play, RotateCcw } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 // Define a simple graph structure
@@ -93,7 +93,7 @@ export function CodeDemo() {
                             {edges.map((edge, i) => {
                                 const fromNode = nodes.find(n => n.id === edge.from)!
                                 const toNode = nodes.find(n => n.id === edge.to)!
-                                const isActive = visited.includes(edge.from) && visited.includes(edge.to)
+                                const isActive = activeEdge === i || (visited.includes(edge.from) && visited.includes(edge.to))
 
                                 return (
                                     <motion.line

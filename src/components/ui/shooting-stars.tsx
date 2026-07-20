@@ -56,15 +56,10 @@ export const ShootingStars: React.FC<ShootingStarsProps> = ({
   className,
 }) => {
   const [star, setStar] = useState<ShootingStar | null>(null);
-  const [mounted, setMounted] = useState(false);
   const svgRef = useRef<SVGSVGElement>(null);
   const { resolvedTheme } = useTheme();
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const isLightMode = mounted && resolvedTheme === "light";
+  const isLightMode = resolvedTheme === "light";
   const effectiveStarColor = isLightMode ? "#000000" : starColor;
   const effectiveTrailColor = isLightMode ? "#000000" : trailColor;
 

@@ -46,8 +46,11 @@ export const CyberneticBentoGrid = () => {
         <h1 className="text-4xl sm:text-5xl font-bold text-white text-center mb-8">
           Core Features
         </h1>
+        {/* If your custom 'bento-grid' class doesn't automatically stack on mobile, 
+            you can also add 'grid grid-cols-1 md:grid-cols-4 gap-4' here */}
         <div className="bento-grid">
-          <BentoItem className="col-span-2 row-span-2 flex flex-col justify-between">
+          {/* Added md: to spans */}
+          <BentoItem className="md:col-span-2 md:row-span-2 flex flex-col justify-between">
             <div>
               <h2 className="text-2xl font-bold text-white">Real-time Analytics</h2>
               <p className="mt-2 text-gray-400">
@@ -55,12 +58,15 @@ export const CyberneticBentoGrid = () => {
                 streams and visualizations.
               </p>
             </div>
-            <div className="mt-4 h-48 bg-transparent rounded-lg flex items-center justify-center text-gray-500 overflow-hidden">
-              <img
-                src="https://images.unsplash.com/photo-1551281044-8b5bdc2d8f5e?auto=format&fit=crop&w=1600&q=80"
-                alt="Analytics chart panel"
-                className="h-full w-full object-cover"
-                loading="lazy"
+            <div className="mt-4 h-48 overflow-hidden rounded-lg bg-transparent text-gray-500">
+              <div
+                role="img"
+                aria-label="Analytics chart panel"
+                className="h-full w-full bg-cover bg-center"
+                style={{
+                  backgroundImage:
+                    "url(https://images.unsplash.com/photo-1551281044-8b5bdc2d8f5e?auto=format&fit=crop&w=1600&q=80)",
+                }}
               />
             </div>
           </BentoItem>
@@ -76,13 +82,15 @@ export const CyberneticBentoGrid = () => {
               Enterprise-grade authentication and user management built-in.
             </p>
           </BentoItem>
-          <BentoItem className="row-span-2">
+          {/* Added md: to span */}
+          <BentoItem className="md:row-span-2">
             <h2 className="text-xl font-bold text-white">Automated Backups</h2>
             <p className="mt-2 text-gray-400 text-sm">
               Your data is always safe with automated, redundant backups.
             </p>
           </BentoItem>
-          <BentoItem className="col-span-2">
+          {/* Added md: to span */}
+          <BentoItem className="md:col-span-2">
             <h2 className="text-xl font-bold text-white">Serverless Functions</h2>
             <p className="mt-2 text-gray-400 text-sm">
               Run your backend code without managing servers. Scale infinitely with

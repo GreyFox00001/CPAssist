@@ -1,64 +1,93 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-
 const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+);
 
 export async function POST(request: Request) {
-    try {
-        const body = await request.json()
+  try {
+    const body = (await request.json()) as {
+      name?: unknown;
+      email?: unknown;
+      password?: unknown;
+      phone?: unknown;
+    };
 
-        const {name,email,password,phone} = body
+    const name = typeof body.name === "string" ? body.name.trim() : "";
+    const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+    const password = typeof body.password === "string" ? body.password : "";
+    const phone = typeof body.phone === "string" ? body.phone.trim() : "";
 
-        if(!name || !email || !password){
-            return NextResponse.json({
-                success: false,
-                message: "Name, Email and Password are required"},
-                {status:400}
-            )
-        }
-
-        const verifycode = Math.floor(100000+Math.random()*900000).toString()
-
-        const verifycodeExpiry = new Date(Date.now() + 30*60*1000)
-
-        const {data,error} = await supabase.auth.signUp({
-            email,
-            password
-        })
-
-        if(error){
-            return NextResponse.json({
-                success: false,
-                error: error.message || "Supabase auth error"
-            },{status:400})
-        }
-
-        const user = data.user
-
-        if(user){
-            await supabase.from("signup").insert({
-                id: user.id,
-                name,
-                email,
-                phone: phone || null,
-                verifycode: verifycode,
-                verifycodeExpiry: verifycodeExpiry,
-            })
-        }
-
-        return NextResponse.json({
-            success: true,
-            message: "Verification code sent"
-        },{status:200})
-
-    } catch (error) {
-        return NextResponse.json({
-            success: false,
-            message: "Signup failed"
-        }, { status: 400 })
+    if (!name || !email || !password) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Name, email and password are required",
+        },
+        { status: 400 },
+      );
     }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json(
+        { success: false, message: "Please enter a valid email address" },
+        { status: 400 },
+      );
+    }
+
+    if (password.length < 8) {
+      return NextResponse.json(
+        { success: false, message: "Password must be at least 8 characters" },
+        { status: 400 },
+      );
+    }
+
+    if (phone && !/^\+?[\d\s\-()]+$/.test(phone)) {
+      return NextResponse.json(
+        { success: false, message: "Please enter a valid phone number" },
+        { status: 400 },
+      );
+    }
+
+    const origin = new URL(request.url).origin;
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${origin}/api/auth/callback?next=/dashboard`,
+        data: {
+          name,
+          phone: phone || null,
+        },
+      },
+    });
+
+    if (error) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: error.message || "Signup failed",
+        },
+        { status: 400 },
+      );
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Account created. Check your email to confirm your account.",
+      },
+      { status: 200 },
+    );
+  } catch {
+    return NextResponse.json(
+      {
+        success: false,
+        message: "Signup failed",
+      },
+      { status: 400 },
+    );
+  }
 }

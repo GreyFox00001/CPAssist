@@ -48,7 +48,7 @@ export default function SignupPage() {
           <div className="rounded-2xl border border-border/70 bg-background/60 p-4">Clean email verification flow</div>
           <div className="rounded-2xl border border-border/70 bg-background/60 p-4">Strong password guidance</div>
           <div className="rounded-2xl border border-border/70 bg-background/60 p-4">Optional phone capture</div>
-          <div className="rounded-2xl border border-border/70 bg-background/60 p-4">Ready for backend auth wiring</div>
+          <div className="rounded-2xl border border-border/70 bg-background/60 p-4">Secure email confirmation</div>
         </div>
         <p className="text-sm text-muted-foreground">
           Already registered?{" "}
